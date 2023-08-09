@@ -25,6 +25,8 @@ class _GameBoardState extends State<GameBoard> {
   // current tetris piece
   Piece currentPiece = Piece(type: Tetromino.L);
 
+  int currentScore = 0;
+
   @override
   void initState() {
     super.initState();
@@ -45,6 +47,9 @@ class _GameBoardState extends State<GameBoard> {
   void gameLoop(Duration frameRate) {
     Timer.periodic(frameRate, (timer) {
       setState(() {
+        // clear lines
+        clearLines();
+
         // check landing piece
         checkLanding();
 
@@ -147,6 +152,40 @@ class _GameBoardState extends State<GameBoard> {
     }
   }
 
+  // clear lines
+  void clearLines() {
+    // Loop through each row of the game board from bottom to top
+    for (int row = colLength - 1; row >= 0; row--) {
+      // Initialize a variable to track if the row is full
+      bool rowIsFull = true;
+
+      // check if the row if full
+      for (int col = 0; col < rowLength; col++) {
+        if (gameBoard[row][col] == null) {
+          rowIsFull = false;
+          break;
+        }
+      }
+
+      // clear the row and shift row down if the row is full
+      if (rowIsFull) {
+        // move all above rows above the cleared row down by one position
+        for (int i = row; i > 0; i--) {
+          // copy the above row to the current new
+          gameBoard[i] = List.from(
+            gameBoard[i - 1],
+          );
+        }
+
+        // set the top row to empty
+        gameBoard[0] = List.generate(row, (index) => null);
+
+        // Increase the score
+        currentScore++;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -182,6 +221,13 @@ class _GameBoardState extends State<GameBoard> {
                     return Pixel(color: Colors.grey[900], child: index);
                   }
                 }),
+          ),
+
+          Text(
+            "Score: $currentScore",
+            style: const TextStyle(
+              color: Colors.white,
+            ),
           ),
 
           // Game Controllers
