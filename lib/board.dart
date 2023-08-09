@@ -26,11 +26,13 @@ class _GameBoardState extends State<GameBoard> {
   // current tetris piece
   Piece currentPiece = Piece(type: Tetromino.L);
 
-  int frameRateDuration = 400;
+  int frameRateDuration = 650;
 
   int currentScore = 0;
 
   bool gameOver = false;
+
+  Timer? gameTimer;
 
   @override
   void initState() {
@@ -48,9 +50,9 @@ class _GameBoardState extends State<GameBoard> {
     gameLoop(frameRate);
   }
 
-  // game loop
   void gameLoop(Duration frameRate) {
-    Timer.periodic(frameRate, (timer) {
+    // Store the Timer in the gameTimer variable
+    gameTimer = Timer.periodic(frameRate, (timer) {
       setState(() {
         // clear lines
         clearLines();
@@ -149,6 +151,16 @@ class _GameBoardState extends State<GameBoard> {
     }
   }
 
+  // move  Down
+  void moveDown() {
+    // make sure the move is valid before moving
+    if (!checkCollision(Direction.down)) {
+      setState(() {
+        currentPiece.movePiece(Direction.down);
+      });
+    }
+  }
+
   // Rotate
   void rotate() {
     setState(() {
@@ -197,7 +209,16 @@ class _GameBoardState extends State<GameBoard> {
         // Increase the score
         currentScore++;
 
-        frameRateDuration += 10;
+        if (currentScore > 0 && frameRateDuration >= 100) {
+          // Decrease frameRateDuration based on the number of lines cleared
+          frameRateDuration -= currentScore * 10;
+        }
+
+        gameTimer?.cancel();
+
+        // Create a new Timer with the updated frame rate
+        Duration newFrameRate = Duration(milliseconds: frameRateDuration);
+        gameLoop(newFrameRate);
       }
     }
   }
@@ -216,6 +237,7 @@ class _GameBoardState extends State<GameBoard> {
 
   void showGameOverDialog() {
     showDialog(
+        barrierDismissible: false,
         context: context,
         builder: (context) => AlertDialog(
               title: Row(
@@ -305,11 +327,27 @@ class _GameBoardState extends State<GameBoard> {
                 }),
           ),
 
-          Text(
-            "Score: $currentScore",
-            style: const TextStyle(
-              color: Colors.white,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                  onPressed: moveDown,
+                  color: Colors.white,
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 40,
+                  )),
+              const SizedBox(
+                height: 10,
+              ),
+              Text(
+                "Score: $currentScore",
+                style: const TextStyle(
+                  color: Colors.cyan,
+                ),
+              ),
+            ],
           ),
 
           // Game Controllers

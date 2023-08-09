@@ -17,7 +17,7 @@ class SplashScreenState extends State<SplashScreen> {
     super.initState();
     // Wait for 3 seconds, then navigate to the home screen
     Timer(
-      const Duration(seconds: 4),
+      const Duration(seconds: 3),
       () => Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const GameBoard()),
@@ -46,9 +46,9 @@ class SplashScreenState extends State<SplashScreen> {
                     style: TextStyle(color: Colors.cyan),
                   ).animateOnPageLoad(
                       msDelay: 300, dx: 0.0, dy: 70.0, showDelay: 300),
-                      const SizedBox(
-                        height: 10,
-                      ),
+                  const SizedBox(
+                    height: 10,
+                  ),
                   const Text(
                     "Mohamed Shehata",
                     style: TextStyle(
