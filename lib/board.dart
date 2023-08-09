@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'package:tetris_game/piece.dart';
 import 'package:tetris_game/pixel.dart';
 import 'package:tetris_game/values.dart';
@@ -25,7 +26,11 @@ class _GameBoardState extends State<GameBoard> {
   // current tetris piece
   Piece currentPiece = Piece(type: Tetromino.L);
 
+  int frameRateDuration = 400;
+
   int currentScore = 0;
+
+  bool gameOver = false;
 
   @override
   void initState() {
@@ -39,7 +44,7 @@ class _GameBoardState extends State<GameBoard> {
     currentPiece.initializePiece();
 
     // frame refresh rate
-    Duration frameRate = const Duration(milliseconds: 400);
+    Duration frameRate = Duration(milliseconds: frameRateDuration);
     gameLoop(frameRate);
   }
 
@@ -52,6 +57,11 @@ class _GameBoardState extends State<GameBoard> {
 
         // check landing piece
         checkLanding();
+
+        if (gameOver) {
+          timer.cancel();
+          showGameOverDialog();
+        }
 
         // move current piece down
         currentPiece.movePiece(Direction.down);
@@ -123,6 +133,10 @@ class _GameBoardState extends State<GameBoard> {
         Tetromino.values[random.nextInt(Tetromino.values.length)];
     currentPiece = Piece(type: randomType);
     currentPiece.initializePiece();
+
+    if (isGameOver()) {
+      gameOver = true;
+    }
   }
 
   // move  left
@@ -182,8 +196,77 @@ class _GameBoardState extends State<GameBoard> {
 
         // Increase the score
         currentScore++;
+
+        frameRateDuration += 10;
       }
     }
+  }
+
+  // GameOve
+  bool isGameOver() {
+    // Check if all columns in the top row is fulled
+    for (int col = 0; col < rowLength; col++) {
+      if (gameBoard[0][col] != null) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  void showGameOverDialog() {
+    showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+              title: Row(
+                children: [
+                  SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: Lottie.asset("assets/json/game_over.json")),
+                  const SizedBox(
+                    width: 2,
+                  ),
+                  const Flexible(
+                      child: Text(
+                    "Game Over",
+                    style: TextStyle(
+                        color: Colors.red, fontWeight: FontWeight.bold),
+                  )),
+                ],
+              ),
+              content: Text("Your Score is $currentScore"),
+              actions: [
+                TextButton(
+                    onPressed: () {
+                      resetGame();
+
+                      Navigator.pop(context);
+                    },
+                    child: const Text(
+                      "Play Again",
+                      style: TextStyle(color: Colors.cyan),
+                    ))
+              ],
+            ));
+  }
+
+  void resetGame() {
+    // clear the game board
+    gameBoard = List.generate(
+      colLength,
+      (i) => List.generate(
+        rowLength,
+        (j) => null,
+      ),
+    );
+
+    gameOver = false;
+    currentScore = 0;
+
+    createNewPiece();
+
+    startGame();
   }
 
   @override
@@ -206,19 +289,18 @@ class _GameBoardState extends State<GameBoard> {
 
                   // current piece
                   if (currentPiece.position.contains(index)) {
-                    return Pixel(color: currentPiece.color, child: index);
+                    return Pixel(color: currentPiece.color);
                   }
 
                   // landed piece
                   else if (gameBoard[row][col] != null) {
                     final Tetromino? tetrominoType = gameBoard[row][col];
-                    return Pixel(
-                        color: tetrominoColors[tetrominoType], child: '');
+                    return Pixel(color: tetrominoColors[tetrominoType]);
                   }
 
                   // blank pixels
                   else {
-                    return Pixel(color: Colors.grey[900], child: index);
+                    return Pixel(color: Colors.grey[900]);
                   }
                 }),
           ),
