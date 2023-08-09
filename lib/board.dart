@@ -23,7 +23,7 @@ class GameBoard extends StatefulWidget {
 
 class _GameBoardState extends State<GameBoard> {
   // current tetris piece
-  Piece currentPiece = Piece(type: Tetromino.S);
+  Piece currentPiece = Piece(type: Tetromino.L);
 
   @override
   void initState() {
@@ -37,7 +37,7 @@ class _GameBoardState extends State<GameBoard> {
     currentPiece.initializePiece();
 
     // frame refresh rate
-    Duration frameRate = const Duration(milliseconds: 500);
+    Duration frameRate = const Duration(milliseconds: 400);
     gameLoop(frameRate);
   }
 
@@ -58,29 +58,38 @@ class _GameBoardState extends State<GameBoard> {
   // return true -> there is a collision
   // return false -> there is no collision
   bool checkCollision(Direction direction) {
-  for (int i = 0; i < currentPiece.position.length; i++) {
-    int row = (currentPiece.position[i] / rowLength).floor();
-    int col = (currentPiece.position[i] % rowLength);
+    for (int i = 0; i < currentPiece.position.length; i++) {
+      int row = (currentPiece.position[i] / rowLength).floor();
+      int col = (currentPiece.position[i] % rowLength);
 
-    if (direction == Direction.left) {
-      col -= 1;
-    } else if (direction == Direction.right) {
-      col += 1;
-    } else if (direction == Direction.down) {
-      row += 1;
-    }
+      if (direction == Direction.left) {
+        col -= 1;
+      } else if (direction == Direction.right) {
+        col += 1;
+      } else if (direction == Direction.down) {
+        row += 1;
+      }
 
-    if (row >= colLength || col < 0 || col >= rowLength) {
-      return true;
-    }
+      if (row >= colLength || col < 0 || col >= rowLength) {
+        return true;
+      }
 
-    // Check for collision with landed pieces
-    if (direction == Direction.down && row >= 0 && gameBoard[row][col] != null) {
-      return true;
+      // Check for collision with landed pieces when moving left or right
+      if ((direction == Direction.left || direction == Direction.right) &&
+          row >= 0 &&
+          gameBoard[row][col] != null) {
+        return true;
+      }
+
+      // Check for collision with landed pieces
+      if (direction == Direction.down &&
+          row >= 0 &&
+          gameBoard[row][col] != null) {
+        return true;
+      }
     }
+    return false;
   }
-  return false;
-}
 
   void checkLanding() {
     // if going down to occupied
@@ -111,35 +120,98 @@ class _GameBoardState extends State<GameBoard> {
     currentPiece.initializePiece();
   }
 
+  // move  left
+  void moveLeft() {
+    // make sure the move is valid before moving
+    if (!checkCollision(Direction.left)) {
+      setState(() {
+        currentPiece.movePiece(Direction.left);
+      });
+    }
+  }
+
+  // Rotate
+  void rotate() {
+    setState(() {
+      currentPiece.rotatePiece();
+    });
+  }
+
+  // move  Right
+  void moveRight() {
+    // make sure the move is valid before moving
+    if (!checkCollision(Direction.right)) {
+      setState(() {
+        currentPiece.movePiece(Direction.right);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: GridView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: rowLength * colLength,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: rowLength),
-          itemBuilder: (context, index) {
-            // get row  and col of each index
-            int row = (index / rowLength).floor();
-            int col = (index % rowLength);
+      body: Column(
+        children: [
+          // Game Board
+          Expanded(
+            child: GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: rowLength * colLength,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: rowLength),
+                itemBuilder: (context, index) {
+                  // get row  and col of each index
+                  int row = (index / rowLength).floor();
+                  int col = (index % rowLength);
 
-            // current piece
-            if (currentPiece.position.contains(index)) {
-              return Pixel(color: Colors.red, child: index);
-            }
+                  // current piece
+                  if (currentPiece.position.contains(index)) {
+                    return Pixel(color: currentPiece.color, child: index);
+                  }
 
-            // landed piece
-            else if (gameBoard[row][col] != null) {
-              return Pixel(color: Colors.amber, child: '');
-            }
+                  // landed piece
+                  else if (gameBoard[row][col] != null) {
+                    final Tetromino? tetrominoType = gameBoard[row][col];
+                    return Pixel(
+                        color: tetrominoColors[tetrominoType], child: '');
+                  }
 
-            // blank pixels
-            else {
-              return Pixel(color: Colors.grey[900], child: index);
-            }
-          }),
+                  // blank pixels
+                  else {
+                    return Pixel(color: Colors.grey[900], child: index);
+                  }
+                }),
+          ),
+
+          // Game Controllers
+          Padding(
+            padding: const EdgeInsets.only(bottom: 50),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // left
+                IconButton(
+                    onPressed: moveLeft,
+                    color: Colors.white,
+                    icon: const Icon(Icons.arrow_back_ios_outlined)),
+
+                // rotate
+                IconButton(
+                    onPressed: rotate,
+                    color: Colors.white,
+                    icon: const Icon(Icons.rotate_right)),
+
+                // right
+                IconButton(
+                    onPressed: moveRight,
+                    color: Colors.white,
+                    icon: const Icon(Icons.arrow_forward_ios_outlined)),
+              ],
+            ),
+          )
+        ],
+      ),
     );
   }
 }
